@@ -74,13 +74,12 @@ if __name__ == "__main__":
 		#	- drop down to quadratic / linear
 
 		# Need two potential solves to deal with (K-S)+, first for the case K-S > 0, and then for K - S = 0 when exercising is not valid
-		solutions_plus = [s for s in solve(coef_dot_x + ' - ({k}-x)'.format(k=strike_price)) if s.is_real and s < strike_price]
+		solutions_plus = [s for s in solve(coef_dot_x + ' - ({k}-x)'.format(k=strike_price)) if s.is_real and s < strike_price and s > 0]
 
 		if len(solutions_plus) != 0:
 			pi[0,i] = solutions_plus[0]
 		else:
-			solutions_reg = [s for s in solve(coef_dot_x.format(k=strike_price)) if s.is_real and s < strike_price]
-			print(solutions_reg,'\n')
+			solutions_reg = [s for s in solve(coef_dot_x.format(k=strike_price)) if s.is_real and s < strike_price and s > 0]
 
 			if len(solutions_reg) != 0:	
 				pi[0,i] = solutions_reg[0]
@@ -92,6 +91,10 @@ if __name__ == "__main__":
 			if stock_price * np.exp(paths[j]) <= float(pi[0,i]):
 				v[j] = np.max([0,strike_price - (stock_price * np.exp(paths[j]))])
 
+		if i%100 == 0:
+			print("Steps left: ", i)
+			print(np.average(v))
+
 	# Here we run into the issue at timestep 0 where all the values will be equal to S
 	# We avoid fitting a model here and take the average of the future time steps for the value at 0 and discount the value
 	# Unlike below, calculating the value is unecessary, we just assume continuity and discount the exercise boundary
@@ -101,6 +104,7 @@ if __name__ == "__main__":
 	paths = np.random.normal((r-0.5*(sigma**2))*T, np.sqrt(T)*sigma, (M,1))
 	v = np.fmax(np.zeros((paths.shape)), (strike_price - stock_price*np.exp(paths)))
 
+
 	for i in np.arange(n-1,0,-1):
 		for j in np.arange(0,M):
 			paths[j] = np.random.normal(paths[j]*(1-(1/(i+1))), sigma*np.sqrt(delta_t*(1-(1/(i+1)))))
@@ -108,6 +112,11 @@ if __name__ == "__main__":
 
 			if stock_price * np.exp(paths[j]) <= float(pi[0,i]):
 				v[j] = np.max([0,strike_price - (stock_price * np.exp(paths[j]))])
+
+		
+		if i%100 == 0:
+			print("Steps left: ", i)
+			print(np.average(v))
 
 	# Here we run into the issue at timestep 0 where all the values will be equal to S
 	# We avoid fitting a model here and take the average of the future time steps for the value at 0 and discount the value
